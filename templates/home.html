@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+    <link rel ="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="static/css/design.css" media="all" />
+    <title>Video Call with Besties</title>
+</head>
+<body style="text-align: center; color:white; background-color: rgb(51,51,51);">
+    <ul>
+        <li><a class="active" href="#home" style="background-color: aqua;">Home</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="https://www.instagram.com/utalmighty/"><img src="static/images/instagram.svg" aria-label="Utkarsh's Instagram"></a></li>
+        <li><a href="https://www.facebook.com/profile.php?id=100008202574581"><img src="static/images/facebook.svg" aria-label="Utkarsh's Facebook"></a></li>
+        <li><a href="https://github.com/utalmighty/Video-Conf"><img src="static/images/github.png" style="width: 27px; height: 27px;" aria-label="Source Code"></a></li>
+      </ul>
+      <h6 style="padding: 10px;">
+          This is Video Conferencing App</h6>
+    <div id= 'video_container'>
+        <video id = 'webcam' autoplay playinline></video>
+    </div>
+    <div id="other"><a>Other Person</a>
+        <br>
+        <video id = 'remote' autoplay playinline></video>
+    </div>
+    <a >Sign up</a>
+    <input id='usernameid' placeholder="Username" type="text" style="background-color: rgba(186, 217, 247, 0.699); border-radius: 20px; border-width: 0px;" required></input>
+    <input id='passwordid' placeholder="Password" type="password" style="background-color: rgba(186, 217, 247, 0.699); border-radius: 20px; border-width: 0px;" required></input>
+    <button id='buttonid'  style="background-color: black; border-radius: 15px; color: white; border-width: 0px;" onclick="sendcred()">Create</button>
+    </div>
+    <script src = 'static/my.js'></script>
+    <br>
+    <br>
+    <br>
+    <a>JOIN MEETING</a>
+    <input id='joinusernameid' placeholder="Meeting-Username" style="background-color: rgba(186, 217, 247, 0.699); border-radius: 20px; border-width: 0px;" type="text" required></input>
+    <input id='joinpasswordid' placeholder="Meeting-Password" style="background-color: rgba(186, 217, 247, 0.699); border-radius: 20px; border-width: 0px;" type="password" required></input>
+    <button id='buttonid' style="background-color: black; border-radius: 15px; color: white; border-width: 0px;" onclick="sendjoin()">Connect</button>
+</body>
+</html>
