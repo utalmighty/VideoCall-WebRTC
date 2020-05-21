@@ -25,11 +25,15 @@ navigator.mediaDevices.getUserMedia(constraints)
 
 
 
-function sendcred(){ 
+function sendcred(){
     username = document.getElementById('usernameid').value;
     password = document.getElementById('passwordid').value;
-    console.log('sending Cred');
-    socket.emit('Credentials', {'creator':true, 'username': username, 'password':password}); // Sending Cred to server
+    if (username.length > 0 && password.length > 0){
+        socket.emit('Credentials', {'creator':true, 'username': username, 'password':password}); // Sending Cred to server
+    }
+    else{
+        alert('Username or Password can not be null!');
+    }
 }
 
 socket.on('flashing', function(mess){ // Once server checks up for username and password it sends message which is displayed as alert
@@ -39,7 +43,12 @@ socket.on('flashing', function(mess){ // Once server checks up for username and 
 function sendjoin(){ // to send Join request
     username = document.getElementById('joinusernameid').value;
     password = document.getElementById('joinpasswordid').value;
+    if(username == document.getElementById('usernameid').value){
+        alert('You can not call yourself!')
+    }
+    else{
     socket.emit('Credentials', {'creator':false, 'username': username, 'password':password});
+    }
 }
 
 
@@ -48,7 +57,7 @@ socket.on('Credentials', function(calleesid){// once server checks up for the op
 })
 
 function makeoffer(calleesid){ // offer making
-    const peerConnection = new RTCPeerConnection(); //write config in (). //RTCPeerConnection Object is created.
+    const peerConnection = new RTCPeerConnection(config); //write config in (). //RTCPeerConnection Object is created.
     peerConnections[calleesid] = peerConnection;
     let stream = video.srcObject; // stream to be send(video), its source object is copied
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream)); // specifies tracks from stream to be send.
@@ -57,6 +66,11 @@ function makeoffer(calleesid){ // offer making
     .then(function(){
         socket.emit('offer', {'to':calleesid, 'message': peerConnection.localDescription}); // offer is emited through socket to server and server will send to calleesid
     })
+    peerConnection.onicecandidate = function(event) {
+        if (event.candidate) {
+          socket.emit('candidate', {'to': calleesid, 'message':event.candidate});
+        }
+    };
     peerConnection.ontrack = function(event){ //it specifies the tracts to be send 
         remotevid.srcObject = event.streams[0];
     }
@@ -64,7 +78,7 @@ function makeoffer(calleesid){ // offer making
 
 
 socket.on('offer', function(message){// if offer is received
-        peerConnection = new RTCPeerConnection(); // write config in ()
+        peerConnection = new RTCPeerConnection(config); // write config in ()
         let stream = video.srcObject; // source object of video of comming connection is set
         stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
         peerConnection.setRemoteDescription(message['message']) // Remember Local Description and SDP is send throungh the sockets
@@ -75,10 +89,20 @@ socket.on('offer', function(message){// if offer is received
             socket.emit('answer', {'to': message['callerid'], 'message': peerConnection.localDescription});
         }
         });
+        peerConnection.onicecandidate = function(event) {
+            if (event.candidate) {
+              socket.emit('candidate', {'to': message['callerid'], 'message':event.candidate});
+            }
+        };
         peerConnection.ontrack = function(event){
             remotevid.srcObject = event.streams[0];
         }
 })
+
+socket.on('candidate', function(mess){
+    peerConnections[mess['from']].addIceCandidate(new RTCIceCandidate(mess['message']))
+    .catch(e => console.error(e));
+});
 
 socket.on('close', function(){// closing the peer-peer connection
     peerConnection.close();

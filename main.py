@@ -28,7 +28,6 @@ def default_error_handler(e):
 
 @socket.on('Credentials')
 def Credentials(credential_json):
-    print(credential_json)
     if(credential_json['creator'] == True):
         for i in database:
             if i['username'] == credential_json['username']:
@@ -36,6 +35,7 @@ def Credentials(credential_json):
                 break
         else:
             sid = request.sid
+            print(credential_json['username'], 'Joined & Password: ', credential_json['password'], 'Session_ID:', sid)
             database.append({'username': credential_json['username'],
                             'password': credential_json['password'], 'sessionid': sid})
             emit('flashing', {'messageid':1, 'message':'Added!'})
@@ -59,6 +59,11 @@ def sendoffer(mess):
 def sendanswer(mess):
     emit('answer', {'calleeid': request.sid, 'message': mess['message']}, room = mess['to'])
 
+@socket.on('candidate')
+def candidate(mess):
+    print('Public IPs- ', mess['to'], mess['message'])
+    emit('candidate', {'from': request.sid, 'message': mess['message']}, room = mess['to'])
+
 @socket.on('disconnect')
 def close():
     rem = request.sid
@@ -70,5 +75,5 @@ def close():
             break
 
 if __name__ == '__main__':
-    socket.run(con, debug = True, host = '192.168.1.9') # for locally
+    socket.run(con, debug = True) # for locally
     #con.run() # for heroku
