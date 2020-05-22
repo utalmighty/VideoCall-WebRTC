@@ -8,8 +8,9 @@ const peerConnections = {};
 
 const constraints = { // media devices constraints
     audio:true,
-    video: true
+    video: {width: {min: 320, max: 640}, height: {min: 240, max: 480}, frameRate: {max: 15}}
 };
+
 video = document.getElementById('webcam');
 remotevid = document.getElementById('remote');
 //quality=4; // lower is better, range 0.0 to 1.0(as from web)
@@ -40,11 +41,15 @@ socket.on('flashing', function(mess){ // Once server checks up for username and 
     alert(mess['message']);
 })
 
+
 function sendjoin(){ // to send Join request
     username = document.getElementById('joinusernameid').value;
     password = document.getElementById('joinpasswordid').value;
     if(username == document.getElementById('usernameid').value){
         alert('You can not call yourself!')
+    }
+    else if (username.length == 0 || password.length == 0){
+        alert('Enter username or password!');
     }
     else{
     socket.emit('Credentials', {'creator':false, 'username': username, 'password':password});
@@ -119,5 +124,7 @@ function moveTocorner(){
     video.style.bottom = '4px';
     video.style.width = '100px';
     video.style.height = '75px';
-    video.style.position = 'fixed'; 
+    video.style.position = 'relative';
+    remotevid.style.width = 'auto';
+    remotevid.style.height = 'auto'; 
 }

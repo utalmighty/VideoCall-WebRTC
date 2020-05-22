@@ -19,17 +19,14 @@
       <h6 style="padding: 10px;">
           This is Video Conferencing App</h6>
     <div id= 'video_container'>
+        <video id = 'remote' autoplay playinline style="width: 0; height:0"></video>
         <video id = 'webcam' autoplay playinline muted></video>
     </div>
-    <div id="other"><a>Other Person</a>
         <br>
-        <video id = 'remote' autoplay playinline></video>
-    </div>
     <a >Sign up</a>
     <input id='usernameid' placeholder="Username" type="text" style="background-color: rgba(186, 217, 247, 0.699); border-radius: 20px; border-width: 0px;" required></input>
     <input id='passwordid' placeholder="Password" type="password" style="background-color: rgba(186, 217, 247, 0.699); border-radius: 20px; border-width: 0px;" required></input>
     <button id='buttonid'  style="background-color: black; border-radius: 15px; color: white; border-width: 0px;" onclick="sendcred()">Create</button>
-    </div>
     <script src = 'static/my.js'></script>
     <br>
     <br>
