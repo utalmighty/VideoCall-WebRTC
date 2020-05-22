@@ -20,7 +20,9 @@
           This is Video Conferencing App</h6>
     <div id= 'video_container'>
         <video id = 'remote' autoplay playinline style="width: 0; height:0"></video>
-        <video id = 'webcam' autoplay playinline muted></video>
+        <video id = 'webcam' autoplay playinline muted style="width: 40%; height: 30%;"></video>
+        <img id="screen" src="static/images/screen-share.svg" onclick="screenshare()">
+        <img id="camera" src="static/images/camera.svg" onclick="camera()" style="display: none;">
     </div>
         <br>
     <a >Sign up</a>

@@ -21,7 +21,6 @@ def about():
 def home():
     return render_template('home.html')
 
-
 @socket.on_error_default
 def default_error_handler(e):
     print(str(e))
@@ -76,5 +75,5 @@ def close():
             break
 
 if __name__ == '__main__':
-    socket.run(con, debug = True) # for locally
+    socket.run(con, debug = True) # for locally , host='192.168.1.9'
     #con.run() # for heroku

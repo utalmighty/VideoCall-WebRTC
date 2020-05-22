@@ -119,7 +119,33 @@ socket.on('answer', function(message){
     peerConnections[message['calleeid']].setRemoteDescription(message['message']);
 });
 
+function screenshare(){
+    document.getElementById('camera').style.display = 'block';
+    document.getElementById('screen').style.display = 'none';
+    video.style.width = "75%";
+    video.style.height = "50%";
+    navigator.mediaDevices.getDisplayMedia({video: true})
+    .then(function(stream){ // if success in getting media devices
+        video.srcObject = stream;// adding stream to video Element
+    })
+    .catch(error => console.log(error));
+}
+
+function camera(){
+    document.getElementById('camera').style.display = 'none';
+    document.getElementById('screen').style.display = 'block';
+    video.style.width = "40%";
+    video.style.height = "30%";
+    navigator.mediaDevices.getUserMedia(constraints)
+    .then(function(stream){ // if success in getting media devices
+        video.srcObject = stream;// adding stream to video Element
+    })
+    .catch(error => console.log(error));
+}
+
 function moveTocorner(){
+    document.getElementById('camera').style.display = 'none';
+    document.getElementById('screen').style.display = 'none';
     video.style.right = '4px';
     video.style.bottom = '4px';
     video.style.width = '100px';
