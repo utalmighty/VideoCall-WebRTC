@@ -61,14 +61,15 @@ def sendanswer(mess):
 
 @socket.on('candidate')
 def candidate(mess):
-    print('Public IPs- ', mess['to'], mess['message'])
-    emit('candidate', {'from': request.sid, 'message': mess['message']}, room = mess['to'])
+    sidd = request.sid
+    print('Sending from-',sidd, '-> to ->', mess['to'], 'IP-',mess['message'])
+    emit('candidate', {'from': sidd, 'message': mess['message']}, room = mess['to'])
 
 @socket.on('disconnect')
 def close():
     rem = request.sid
-    print('Disconnection from', rem)
     emit('close')
+    print('Disconnection from', rem)
     for i,j in enumerate(database):
         if j['sessionid'] == rem:
             database.remove(database[i])

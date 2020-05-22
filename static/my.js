@@ -73,6 +73,7 @@ function makeoffer(calleesid){ // offer making
     };
     peerConnection.ontrack = function(event){ //it specifies the tracts to be send 
         remotevid.srcObject = event.streams[0];
+        moveTocorner();
     }
 }
 
@@ -96,6 +97,7 @@ socket.on('offer', function(message){// if offer is received
         };
         peerConnection.ontrack = function(event){
             remotevid.srcObject = event.streams[0];
+            moveTocorner();
         }
 })
 
@@ -111,3 +113,11 @@ socket.on('close', function(){// closing the peer-peer connection
 socket.on('answer', function(message){
     peerConnections[message['calleeid']].setRemoteDescription(message['message']);
 });
+
+function moveTocorner(){
+    video.style.right = '4px';
+    video.style.bottom = '4px';
+    video.style.width = '100px';
+    video.style.height = '75px';
+    video.style.position = 'fixed'; 
+}
