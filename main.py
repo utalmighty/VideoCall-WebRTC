@@ -52,7 +52,12 @@ def Credentials(credential_json):
 
 @socket.on('offer')
 def sendoffer(mess):
-    emit('offer', {'callerid': request.sid, 'message': mess['message']}, room = mess['to'])
+    sid = request.sid
+    for i in database:
+        if i['sessionid'] == sid:
+            clientname = i['username']
+            break
+    emit('offer', {'name': clientname, 'callerid': request.sid, 'message': mess['message']}, room = mess['to'])
 
 @socket.on('answer')
 def sendanswer(mess):
@@ -61,13 +66,12 @@ def sendanswer(mess):
 @socket.on('candidate')
 def candidate(mess):
     sidd = request.sid
-    print('Sending from-',sidd, '-> to ->', mess['to'], 'IP-',mess['message'])
     emit('candidate', {'from': sidd, 'message': mess['message']}, room = mess['to'])
 
 @socket.on('disconnect')
 def close():
     rem = request.sid
-    emit('close')
+    emit('close', rem)
     print('Disconnection from', rem)
     for i,j in enumerate(database):
         if j['sessionid'] == rem:

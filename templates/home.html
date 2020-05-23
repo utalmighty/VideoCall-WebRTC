@@ -19,8 +19,8 @@
       <h6 style="padding: 10px;">
           This is Video Conferencing App</h6>
     <div id= 'video_container'>
-        <video id = 'remote' autoplay playinline style="width: 0; height:0"></video>
-        <video id = 'webcam' autoplay playinline muted style="width: 40%; height: 30%;"></video>
+        <div class="remoteVideos"></div>
+        <video class="localVideo" playsinline autoplay muted></video>
         <img id="screen" src="static/images/screen-share.svg" onclick="screenshare()">
         <img id="camera" src="static/images/camera.svg" onclick="camera()" style="display: none;">
     </div>
@@ -29,7 +29,7 @@
     <input id='usernameid' placeholder="Username" type="text" style="background-color: rgba(186, 217, 247, 0.699); border-radius: 20px; border-width: 0px;" required></input>
     <input id='passwordid' placeholder="Password" type="password" style="background-color: rgba(186, 217, 247, 0.699); border-radius: 20px; border-width: 0px;" required></input>
     <button id='buttonid'  style="background-color: black; border-radius: 15px; color: white; border-width: 0px;" onclick="sendcred()">Create</button>
-    <script src = 'static/my.js'></script>
+    <script src = 'static/js/my.js'></script>
     <br>
     <br>
     <br>
