@@ -6,6 +6,7 @@ const config = {
 
 const peerConnections = {};
 contestents = [];
+maximumparties = 2; // Means Only two Peer can be connected(Excluding yourself)
 
 const constraints = { // media devices constraints
     audio:true,
@@ -66,13 +67,16 @@ function sendjoin(){ // to send Join request
     username = document.getElementById('joinusernameid').value;
     password = document.getElementById('joinpasswordid').value;
     if(username == document.getElementById('usernameid').value){
-        alert('You can not call yourself!')
+        alert('You can not call yourself!');
     }
     else if (username.length == 0 || password.length == 0){
         alert('Enter username or password!');
     }
+    else if(contestents.length < maximumparties){
+        socket.emit('Credentials', {'creator':false, 'username': username, 'password':password});
+    }
     else{
-    socket.emit('Credentials', {'creator':false, 'username': username, 'password':password});
+        alert('Maximum number of candidates limited to: ' + maximumparties);
     }
 }
 
@@ -88,7 +92,13 @@ function makeoffer(calleesid){ // offer making
     peerConnection.createOffer() // Offer is Created(Promise based)
     .then(sdp => peerConnection.setLocalDescription(sdp))//SDP: Session Discription Protocol: it contains many information of Peer.
     .then(function(){
+        console.log('Number of Contestents', contestents.length);
+        if (contestents.length>0){
+            socket.emit('offer+1', {'to': calleesid, 'message': peerConnection.localDescription, 'more': contestents});
+        }
+        else{
         socket.emit('offer', {'to':calleesid, 'message': peerConnection.localDescription}); // offer is emited through socket to server and server will send to calleesid
+        }
     });
     peerConnection.onaddstream = event => handleRemoteStreamAdded(event.stream, calleesid);
     peerConnection.onicecandidate = function(event) {
@@ -122,8 +132,36 @@ socket.on('offer', function(message){// if offer is received
     }  
 })
 
+socket.on('offerer', function(message){// offer with more than one candidate.
+    console.log("Special offerer !!");
+    console.log("Special offerer !!", message['more']);
+    if(confirm(message['name']+ " Calling (with more than one participants). Accept? ")){
+        const peerConnection = new RTCPeerConnection(config);
+        contestents[contestents.length] = message['callerid'];
+        peerConnections[message['callerid']] = peerConnection // write config in ()
+        peerConnection.addStream(localVideo.srcObject); 
+        peerConnection.setRemoteDescription(message['message']) // Remember Local Description and SDP is send throungh the sockets
+        .then(() => peerConnection.createAnswer())
+        .then(sdp => peerConnection.setLocalDescription(sdp))
+        .then(function(){// if was here initially.
+            socket.emit('answer', {'to': message['callerid'], 'message': peerConnection.localDescription});
+        });
+        peerConnection.onaddstream = event => handleRemoteStreamAdded(event.stream, message['callerid']);
+        peerConnection.onicecandidate = function(event) {
+            if (event.candidate) {
+                socket.emit('candidate', {'to': message['callerid'], 'message':event.candidate});
+            }
+        };
+        offeringtothem(message['more']);
+    }
+})
+
 
 socket.on('alsoadd', function(message){
+    offeringtothem(message);
+});
+
+function offeringtothem(message){
     for (i=0; i<message.length; i++){
         xp = message[i];
         const peerConnection = new RTCPeerConnection(config); //write config in (). //RTCPeerConnection Object is created.
@@ -142,7 +180,7 @@ socket.on('alsoadd', function(message){
             }
         };
     }
-});
+}
 
 socket.on('specialofferfromflask', function(message){ 
         const peerConnection = new RTCPeerConnection(config);

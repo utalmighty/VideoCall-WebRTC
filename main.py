@@ -59,6 +59,18 @@ def sendoffer(mess):
             break
     emit('offer', {'name': clientname, 'callerid': sid, 'message': mess['message']}, room = mess['to'])
 
+@socket.on('offer+1')
+def offerer(message):
+    print('Expensive CAll')
+    sid = request.sid
+    for i in database:
+        if i['sessionid'] == sid:
+            clientname = i['username']
+            break
+    emit('offerer', {'name': clientname, 'callerid': sid, 'message': message['message'], 'more': message['more']}, room = message['to'])
+
+
+
 @socket.on('specialofferaddthem')
 def sendoffer(message):
     sid = request.sid
@@ -94,5 +106,5 @@ def close():
             break
 
 if __name__ == '__main__':
-    socket.run(con, debug = True) # for locally , host='192.168.1.9'
+    socket.run(con) # for locally , host='192.168.1.9'
     #con.run() # for heroku
