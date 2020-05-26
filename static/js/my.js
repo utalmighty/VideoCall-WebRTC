@@ -5,6 +5,7 @@ const config = {
   };
 
 const peerConnections = {};
+contestents = [];
 
 const constraints = { // media devices constraints
     audio:true,
@@ -24,6 +25,8 @@ navigator.mediaDevices.getUserMedia(constraints)
 
 function handleRemoteStreamAdded(stream, id){
     const remoteVideo = document.createElement('video');
+    document.getElementById('camera').style.display = 'none';
+    document.getElementById('screen').style.display = 'none';
     remoteVideo.srcObject = stream;
     remoteVideo.setAttribute("id", id.replace(/[^a-zA-Z]+/g, "").toLowerCase());
     remoteVideo.setAttribute("playsinline", "true");
@@ -32,6 +35,7 @@ function handleRemoteStreamAdded(stream, id){
     localVideo.style.right = '4px';
     localVideo.style.bottom = '4px';
     localVideo.style.width = '100px';
+    localVideo.style.margin = '10px';
     localVideo.style.height = '75px';
     localVideo.style.position = 'relative';
     if (remoteVideos.querySelectorAll("video").length === 1) {
@@ -74,7 +78,6 @@ function sendjoin(){ // to send Join request
 
 
 socket.on('Credentials', function(calleesid){// once server checks up for the opposite peer on its database server sends back Session ID of other person
-    console.log('Creating Offer');
     makeoffer(calleesid); // offer make function is called
 });
 
@@ -87,9 +90,7 @@ function makeoffer(calleesid){ // offer making
     .then(function(){
         socket.emit('offer', {'to':calleesid, 'message': peerConnection.localDescription}); // offer is emited through socket to server and server will send to calleesid
     });
-    console.log('calling in next');
     peerConnection.onaddstream = event => handleRemoteStreamAdded(event.stream, calleesid);
-    console.log('called previously');
     peerConnection.onicecandidate = function(event) {
         if (event.candidate) {
           socket.emit('candidate', {'to': calleesid, 'message':event.candidate});
@@ -100,6 +101,7 @@ function makeoffer(calleesid){ // offer making
 socket.on('offer', function(message){// if offer is received
     if(confirm(message['name']+ " Calling. Accept?")){
         const peerConnection = new RTCPeerConnection(config);
+        contestents[contestents.length] = message['callerid'];
         peerConnections[message['callerid']] = peerConnection // write config in ()
         peerConnection.addStream(localVideo.srcObject); 
         peerConnection.setRemoteDescription(message['message']) // Remember Local Description and SDP is send throungh the sockets
@@ -114,7 +116,51 @@ socket.on('offer', function(message){// if offer is received
                 socket.emit('candidate', {'to': message['callerid'], 'message':event.candidate});
             }
         };
+        if (contestents.length > 1){
+            addmore(message['callerid']);
+        }
     }  
+})
+
+
+socket.on('alsoadd', function(message){
+    for (i=0; i<message.length; i++){
+        xp = message[i];
+        const peerConnection = new RTCPeerConnection(config); //write config in (). //RTCPeerConnection Object is created.
+        contestents[contestents.length] = message[i];
+        peerConnections[message[i]] = peerConnection;
+        peerConnection.addStream(localVideo.srcObject);
+        peerConnection.createOffer() // Offer is Created(Promise based)
+        .then(sdp => peerConnection.setLocalDescription(sdp))//SDP: Session Discription Protocol: it contains many information of Peer.
+        .then(function(){
+            socket.emit('specialofferaddthem', {'to': xp, 'message': peerConnection.localDescription}); // offer is emited through socket to server and server will send to calleesid
+        });
+        peerConnection.onaddstream = event => handleRemoteStreamAdded(event.stream, xp);
+        peerConnection.onicecandidate = function(event) {
+            if (event.candidate) {
+            socket.emit('candidate', {'to': message[i], 'message':event.candidate});
+            }
+        };
+    }
+});
+
+socket.on('specialofferfromflask', function(message){ 
+        const peerConnection = new RTCPeerConnection(config);
+        contestents[contestents.length] = message['callerid'];
+        peerConnections[message['callerid']] = peerConnection // write config in ()
+        peerConnection.addStream(localVideo.srcObject); 
+        peerConnection.setRemoteDescription(message['message']) // Remember Local Description and SDP is send throungh the sockets
+        .then(() => peerConnection.createAnswer())
+        .then(sdp => peerConnection.setLocalDescription(sdp))
+        .then(function(){// if was here initially.
+            socket.emit('answer', {'to': message['callerid'], 'message': peerConnection.localDescription});
+        });
+        peerConnection.onaddstream = event => handleRemoteStreamAdded(event.stream, message['callerid']);
+        peerConnection.onicecandidate = function(event) {
+            if (event.candidate) {
+                socket.emit('candidate', {'to': message['callerid'], 'message':event.candidate});
+            }
+        };
 })
 
 socket.on('candidate', function(mess){
@@ -127,11 +173,14 @@ socket.on('close', function(){// closing the peer-peer connection
 })
 
 socket.on('answer', function(message){
-    console.log('Answer received');
+    contestents[contestents.length] = message['calleeid'];
     peerConnections[message['calleeid']].setRemoteDescription(message['message']);
 });
 
-
+function addmore(receiver){
+    x = contestents;
+    socket.emit('specialoffer', {'to': receiver, 'message': x.slice(0,x.length-1)})
+}
 
   socket.on('close', function(id){
       handleRemoteHangup(id)

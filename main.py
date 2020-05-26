@@ -57,7 +57,18 @@ def sendoffer(mess):
         if i['sessionid'] == sid:
             clientname = i['username']
             break
-    emit('offer', {'name': clientname, 'callerid': request.sid, 'message': mess['message']}, room = mess['to'])
+    emit('offer', {'name': clientname, 'callerid': sid, 'message': mess['message']}, room = mess['to'])
+
+@socket.on('specialofferaddthem')
+def sendoffer(message):
+    sid = request.sid
+    for i in database:
+        if i['sessionid'] == sid:
+            clientname = i['username']
+            break
+    print('Special Offer Sending to', message['to'])
+    emit('specialofferfromflask', {'name': clientname, 'callerid': sid, 'message': message['message']}, room = message['to'])
+
 
 @socket.on('answer')
 def sendanswer(mess):
@@ -67,6 +78,10 @@ def sendanswer(mess):
 def candidate(mess):
     sidd = request.sid
     emit('candidate', {'from': sidd, 'message': mess['message']}, room = mess['to'])
+
+@socket.on('specialoffer')
+def special(message):
+    emit('alsoadd', message['message'], room = message['to'])
 
 @socket.on('disconnect')
 def close():
