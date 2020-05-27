@@ -21,3 +21,10 @@ ul {
   li a:hover {
     background-color: #111;
   }
+
+  .flexbox1{
+    margin: auto;
+    display: flex;
+    justify-content: space-between;
+    width: 20%;
+  }

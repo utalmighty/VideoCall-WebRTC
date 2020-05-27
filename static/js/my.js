@@ -25,6 +25,8 @@ navigator.mediaDevices.getUserMedia(constraints)
 .catch(error => console.log(error));
 
 function handleRemoteStreamAdded(stream, id){
+    document.getElementById('joiningbuttonid').disabled = false;
+    document.getElementById('joiningbuttonid').textContent = 'Connect';
     const remoteVideo = document.createElement('video');
     document.getElementById('camera').style.display = 'none';
     document.getElementById('screen').style.display = 'none';
@@ -47,6 +49,31 @@ function handleRemoteStreamAdded(stream, id){
 }
 
 
+function muteunmute(track, mvalue){// track='a' or 'v', True= Unmute, False = Mute
+    if (track == 'a'){
+        if(mvalue == true){
+        document.getElementById('unmutemicid').style.display = 'block';
+        document.getElementById('mutemicid').style.display = 'none';
+        }
+        else{
+            document.getElementById('unmutemicid').style.display = 'none';
+            document.getElementById('mutemicid').style.display = 'block';
+        }
+        localVideo.srcObject.getAudioTracks()[0].enabled = mvalue;
+    }
+    else{
+        if(mvalue == true){
+            document.getElementById('unmutevidid').style.display = 'block';
+            document.getElementById('mutevidid').style.display = 'none';
+            }
+            else{
+                document.getElementById('unmutevidid').style.display = 'none';
+                document.getElementById('mutevidid').style.display = 'block';
+                }
+        localVideo.srcObject.getVideoTracks()[0].enabled = mvalue;
+    }
+}
+
 function sendcred(){
     username = document.getElementById('usernameid').value;
     password = document.getElementById('passwordid').value;
@@ -59,7 +86,19 @@ function sendcred(){
 }
 
 socket.on('flashing', function(mess){ // Once server checks up for username and password it sends message which is displayed as alert
-    alert(mess['message']);
+    if (mess['messageid'] == 3){
+        document.getElementById('joiningbuttonid').disabled = false;
+        document.getElementById('joiningbuttonid').textContent = 'Connect';
+        alert(mess['message']);
+    }
+    else if (mess['messageid'] == 4){
+        document.getElementById('joiningbuttonid').disabled = false;
+        document.getElementById('joiningbuttonid').textContent = 'Connect';
+        alert(mess['from']+' '+mess['message']);
+    } 
+    else{
+        alert(mess['message']);
+    }
 })
 
 
@@ -73,6 +112,7 @@ function sendjoin(){ // to send Join request
         alert('Enter username or password!');
     }
     else if(contestents.length < maximumparties){
+        document.getElementById('joiningbuttonid').disabled = true;
         socket.emit('Credentials', {'creator':false, 'username': username, 'password':password});
     }
     else{
@@ -86,6 +126,7 @@ socket.on('Credentials', function(calleesid){// once server checks up for the op
 });
 
 function makeoffer(calleesid){ // offer making
+    document.getElementById('joiningbuttonid').textContent = 'Calling.';
     const peerConnection = new RTCPeerConnection(config); //write config in (). //RTCPeerConnection Object is created.
     peerConnections[calleesid] = peerConnection;
     peerConnection.addStream(localVideo.srcObject);
@@ -129,12 +170,13 @@ socket.on('offer', function(message){// if offer is received
         if (contestents.length > 1){
             addmore(message['callerid']);
         }
+    }
+    else{
+        socket.emit('declined', {'to': message['callerid']});
     }  
 })
 
 socket.on('offerer', function(message){// offer with more than one candidate.
-    console.log("Special offerer !!");
-    console.log("Special offerer !!", message['more']);
     if(confirm(message['name']+ " Calling (with more than one participants). Accept? ")){
         const peerConnection = new RTCPeerConnection(config);
         contestents[contestents.length] = message['callerid'];
@@ -153,6 +195,9 @@ socket.on('offerer', function(message){// offer with more than one candidate.
             }
         };
         offeringtothem(message['more']);
+    }
+    else{
+        socket.emit('declined', {'to': message['callerid']});
     }
 })
 
@@ -211,6 +256,10 @@ socket.on('close', function(){// closing the peer-peer connection
 })
 
 socket.on('answer', function(message){
+    document.getElementById('joiningbuttonid').textContent = 'Connect';
+    document.getElementById('joiningbuttonid').disabled = false;
+    document.getElementById('joinusernameid').value = '';
+    document.getElementById('joinpasswordid').value = '';
     contestents[contestents.length] = message['calleeid'];
     peerConnections[message['calleeid']].setRemoteDescription(message['message']);
 });
@@ -225,6 +274,7 @@ function addmore(receiver){
   })
 
   function handleRemoteHangup(id) {
+    console.log('me');
     peerConnections[id] && peerConnections[id].close();
     delete peerConnections[id];
     document.querySelector("#" + id.replace(/[^a-zA-Z]+/g, "").toLowerCase()).remove();

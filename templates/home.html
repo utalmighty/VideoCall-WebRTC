@@ -24,6 +24,13 @@
         <img id="screen" src="static/images/screen-share.svg" onclick="screenshare()">
         <img id="camera" src="static/images/camera.svg" onclick="camera()" style="display: none;">
     </div>
+    <div id='controlsid' class = "flexbox1"> 
+        <img src="static/images/unmute mic.webp" id= 'unmutemicid' style="width: 40px; height: 40px; display: block;" aria-label="Mute/Unmute" onclick="muteunmute(track= 'a', mvalue = false)" >
+        <img src="static/images/mute mic.webp"  id= 'mutemicid' style="width: 35px; height: 40px; display: none;" aria-label="Mute/Unmute" onclick="muteunmute(track= 'a', mvalue = true)" >
+        <!-- <img src="static/images/hangup.webp" style="width: 40px; height: 40px;" aria-label="Hang-up"> -->
+        <img src="static/images/unmute vid.png" id= 'unmutevidid' style="width: 34px; height: 31px; display: block;" aria-label="Mute/Unmute" onclick="muteunmute(track= 'v', mvalue = false)">
+        <img src="static/images/mute vid.png"  id= 'mutevidid' style="width: 35px; height: 40px; display: none;" aria-label="Mute/Unmute" onclick="muteunmute(track= 'v', mvalue = true)">
+    </div>
         <br>
     <a >Sign up</a>
     <input id='usernameid' placeholder="Username" type="text" style="background-color: rgba(186, 217, 247, 0.699); border-radius: 20px; border-width: 0px;" required></input>
@@ -36,6 +43,6 @@
     <a>JOIN MEETING</a>
     <input id='joinusernameid' placeholder="Meeting-Username" style="background-color: rgba(186, 217, 247, 0.699); border-radius: 20px; border-width: 0px;" type="text" required></input>
     <input id='joinpasswordid' placeholder="Meeting-Password" style="background-color: rgba(186, 217, 247, 0.699); border-radius: 20px; border-width: 0px;" type="password" required></input>
-    <button id='buttonid' style="background-color: black; border-radius: 15px; color: white; border-width: 0px;" onclick="sendjoin()">Connect</button>
+    <button id='joiningbuttonid' style="background-color: black; border-radius: 15px; color: white; border-width: 0px;" onclick="sendjoin()">Connect</button>
 </body>
 </html>

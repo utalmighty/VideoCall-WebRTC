@@ -49,6 +49,13 @@ def Credentials(credential_json):
         else:
             emit('flashing', {'messageid':3, 'message':'No such concurrent Meeting'})
 
+@socket.on('declined')
+def declined(message):
+    sid = request.sid
+    for i in database:
+        if i['sessionid'] == sid:
+            emit('flashing', {'messageid':4, 'from': i['username'], 'message': ', Declined the call!'}, room= message['to'])
+            break
 
 @socket.on('offer')
 def sendoffer(mess):
@@ -98,7 +105,7 @@ def special(message):
 @socket.on('disconnect')
 def close():
     rem = request.sid
-    emit('close', rem)
+    emit('close', rem) # to room needed.
     print('Disconnection from', rem)
     for i,j in enumerate(database):
         if j['sessionid'] == rem:
@@ -106,5 +113,5 @@ def close():
             break
 
 if __name__ == '__main__':
-    socket.run(con) # for locally , host='192.168.1.9'
+    socket.run(con, debug = True) # for locally , host='192.168.1.9'
     #con.run() # for heroku
