@@ -273,6 +273,23 @@ function addmore(receiver){
       handleRemoteHangup(id)
   })
 
+  function hangup(){
+    for(i=0; i<contestents.length;i++){
+      document.querySelector("#" + contestents[i].replace(/[^a-zA-Z]+/g, "").toLowerCase()).remove();
+    }
+    if (remoteVideos.querySelectorAll("video").length === 1) {
+      remoteVideos.setAttribute("class", "one remoteVideos");
+    } else {
+      remoteVideos.setAttribute("class", "remoteVideos");
+    }
+    socket.emit('hangup', contestents);
+    contestents = [];
+}
+
+socket.on('hangupreceived', function(from){
+    handleRemoteHangup(from);
+})
+
   function handleRemoteHangup(id) {
     console.log('me');
     peerConnections[id] && peerConnections[id].close();

@@ -112,6 +112,12 @@ def close():
             database.remove(database[i])
             break
 
+@socket.on('hangup')
+def hangup(to):
+    sid = request.sid
+    for i in to:
+        emit('hangupreceived', sid, room = i)
+
 if __name__ == '__main__':
     socket.run(con, debug = True) # for locally , host='192.168.1.9'
     #con.run() # for heroku
