@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+    <link rel ="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <script src='static/sfu.js'></script>
+    <title>SFU</title>
+</head>
+<body id='body' style="text-align: center;">
+      <h6 style="padding: 10px;">SFU (Selective Forwarding Unit)</h6>
+      <p>always online like server</p>
+    <div id= 'video_container'>
+        <div id="remoteVideos">
+            <video id="localVideo" playsinline autoplay mute></video>
+            <video id="sendme" playsinline autoplay></video>
+            <canvas id="canvasid" width='400' height="400"></canvas>
+        </div>
+    </div>
+        <br>
+    <div id= 'list'>
+    <h6>List of candidates</h6>
+    <a id='listofpart'></a> 
+    </div>
+</body>
+</html>

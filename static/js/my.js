@@ -7,6 +7,8 @@ const config = {
 const peerConnections = {};
 contestents = [];
 maximumparties = 2; // Means Only two Peer can be connected(Excluding yourself)
+mysid = '';
+insfu = false;
 
 const constraints = { // media devices constraints
     audio:true,
@@ -15,12 +17,32 @@ const constraints = { // media devices constraints
 
 const localVideo = document.querySelector('.localVideo');
 const remoteVideos = document.querySelector('.remoteVideos');
+const instantMeter = document.querySelector('#instant meter');
 socket=io.connect();//default domain- starting socket connection between server(flask) and client
+knowmysid();
+try {
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    window.audioContext = new AudioContext();
+  } catch (e) {
+    alert('Web Audio API not supported.');
+  }
 
 
 navigator.mediaDevices.getUserMedia(constraints)
 .then(function(stream){ // if success in getting media devices
     localVideo.srcObject = stream;// adding stream to video Element
+    window.stream = stream;
+    const soundMeter = window.soundMeter = new SoundMeter(window.audioContext);
+    soundMeter.connectToSource(stream, function(e) {
+    if (e) {
+      alert(e);
+      return;
+    }
+    setInterval(() => {
+      instantMeter.value = instantValueDisplay.innerText =
+        soundMeter.instant.toFixed(2);
+    }, 200);
+  });
 })
 .catch(error => console.log(error));
 
@@ -74,7 +96,7 @@ function muteunmute(track, mvalue){// track='a' or 'v', True= Unmute, False = Mu
     }
 }
 
-function sendcred(){
+function sendcred(){ // Sign IN Credentials.
     username = document.getElementById('usernameid').value;
     password = document.getElementById('passwordid').value;
     if (username.length > 0 && password.length > 0){
@@ -116,12 +138,27 @@ function sendjoin(){ // to send Join request
         socket.emit('Credentials', {'creator':false, 'username': username, 'password':password});
     }
     else{
-        alert('Maximum number of candidates limited to: ' + maximumparties);
+        console.log('joining SFU beacuse number of contestesnts = ', contestents.length);
+        socket.emit('joinsfu', {'to': contestents})// remember to send yourself also
+        alert('Maximum number of candidates limited to: ' + maximumparties+ 'therefore joining SFU');
     }
 }
 
+function knowmysid(){
+    socket.emit('whatsmysid');
+}
 
-socket.on('Credentials', function(calleesid){// once server checks up for the opposite peer on its database server sends back Session ID of other person
+socket.on('yoursidis', function(message){
+    mysid = message['sid']; // Global or NOT
+    console.log('my sid is', mysid);
+})
+
+function direct(){//remove this
+    socket.emit('joinsfu', {'to': [mysid]})// remember to send yourself also
+}
+
+
+socket.on('Credentials', function(calleesid){// received the cred of callee. once server checks up for the opposite peer on its database server sends back Session ID of other person
     makeoffer(calleesid); // offer make function is called
 });
 
@@ -135,7 +172,7 @@ function makeoffer(calleesid){ // offer making
     .then(function(){
         console.log('Number of Contestents', contestents.length);
         if (contestents.length>0){
-            socket.emit('offer+1', {'to': calleesid, 'message': peerConnection.localDescription, 'more': contestents});
+            socket.emit('offer+1', {'to': calleesid, 'message': peerConnection.localDescription, 'more': contestents});//sending callee to also add peers in contestents.
         }
         else{
         socket.emit('offer', {'to':calleesid, 'message': peerConnection.localDescription}); // offer is emited through socket to server and server will send to calleesid
@@ -149,26 +186,43 @@ function makeoffer(calleesid){ // offer making
     };
 }
 
-socket.on('offer', function(message){// if offer is received
+socket.on('offer', function(message){// if offer is received 
     if(confirm(message['name']+ " Calling. Accept?")){
-        const peerConnection = new RTCPeerConnection(config);
-        contestents[contestents.length] = message['callerid'];
-        peerConnections[message['callerid']] = peerConnection // write config in ()
+        if (contestents.length<maximumparties) {
+            const peerConnection = new RTCPeerConnection(config);
+            contestents[contestents.length] = message['callerid'];
+            console.log(contestents);
+            peerConnections[message['callerid']] = peerConnection // write config in ()
+            peerConnection.addStream(localVideo.srcObject); 
         peerConnection.addStream(localVideo.srcObject); 
-        peerConnection.setRemoteDescription(message['message']) // Remember Local Description and SDP is send throungh the sockets
-        .then(() => peerConnection.createAnswer())
-        .then(sdp => peerConnection.setLocalDescription(sdp))
-        .then(function(){// if was here initially.
-            socket.emit('answer', {'to': message['callerid'], 'message': peerConnection.localDescription});
-        });
-        peerConnection.onaddstream = event => handleRemoteStreamAdded(event.stream, message['callerid']);
-        peerConnection.onicecandidate = function(event) {
-            if (event.candidate) {
-                socket.emit('candidate', {'to': message['callerid'], 'message':event.candidate});
+            peerConnection.addStream(localVideo.srcObject); 
+            peerConnection.setRemoteDescription(message['message']) // Remember Local Description and SDP is send throungh the sockets
+            .then(() => peerConnection.createAnswer())
+            .then(sdp => peerConnection.setLocalDescription(sdp))
+            .then(function(){// if was here initially.
+                socket.emit('answer', {'to': message['callerid'], 'message': peerConnection.localDescription});
+            });
+            peerConnection.onaddstream = event => handleRemoteStreamAdded(event.stream, message['callerid']);
+            peerConnection.onicecandidate = function(event) {
+                if (event.candidate) {
+                    socket.emit('candidate', {'to': message['callerid'], 'message':event.candidate});
+                }
+            };
+            if (contestents.length > 1){
+                addmore(message['callerid']);
             }
-        };
-        if (contestents.length > 1){
-            addmore(message['callerid']);
+        }
+        else{
+            if (insfu == false){// if not already in sfu.
+            alert('We need to join SFU');
+            listofguys = contestents;
+            listofguys[listofguys.length] = message['callerid'] // caller + contestents list.
+            socket.emit('joinsfu', {'to': listofguys});//review this. joining sfu to if number is greter than 3.
+            offermakertosfu(mysid); // sending join request by myself.
+            }
+            else{
+                socket.emit('joinsfu', {'to': message['callerid']}) // if already in sfu then sending request to only offered client
+            }
         }
     }
     else{
@@ -176,12 +230,12 @@ socket.on('offer', function(message){// if offer is received
     }  
 })
 
-socket.on('offerer', function(message){// offer with more than one candidate.
-    if(confirm(message['name']+ " Calling (with more than one participants). Accept? ")){
+socket.on('offerer', function(message){// receiced offer with more than one candidate
+    if((confirm(message['name']+ " Calling (with more than one participants). Accept? ")) && (contestents.length<maximumparties)){//also add here to join sfu.
         const peerConnection = new RTCPeerConnection(config);
         contestents[contestents.length] = message['callerid'];
         peerConnections[message['callerid']] = peerConnection // write config in ()
-        peerConnection.addStream(localVideo.srcObject); 
+        peerConnection.addStream(localVideo.srcObject);
         peerConnection.setRemoteDescription(message['message']) // Remember Local Description and SDP is send throungh the sockets
         .then(() => peerConnection.createAnswer())
         .then(sdp => peerConnection.setLocalDescription(sdp))
@@ -206,7 +260,7 @@ socket.on('alsoadd', function(message){
     offeringtothem(message);
 });
 
-function offeringtothem(message){
+function offeringtothem(message){// sending offer to got list toadd them without answer button. to make grp call.
     for (i=0; i<message.length; i++){
         xp = message[i];
         const peerConnection = new RTCPeerConnection(config); //write config in (). //RTCPeerConnection Object is created.
@@ -227,33 +281,29 @@ function offeringtothem(message){
     }
 }
 
-socket.on('specialofferfromflask', function(message){ 
-        const peerConnection = new RTCPeerConnection(config);
-        contestents[contestents.length] = message['callerid'];
-        peerConnections[message['callerid']] = peerConnection // write config in ()
-        peerConnection.addStream(localVideo.srcObject); 
-        peerConnection.setRemoteDescription(message['message']) // Remember Local Description and SDP is send throungh the sockets
-        .then(() => peerConnection.createAnswer())
-        .then(sdp => peerConnection.setLocalDescription(sdp))
-        .then(function(){// if was here initially.
-            socket.emit('answer', {'to': message['callerid'], 'message': peerConnection.localDescription});
-        });
-        peerConnection.onaddstream = event => handleRemoteStreamAdded(event.stream, message['callerid']);
-        peerConnection.onicecandidate = function(event) {
-            if (event.candidate) {
-                socket.emit('candidate', {'to': message['callerid'], 'message':event.candidate});
-            }
-        };
+socket.on('specialofferfromflask', function(message){ // if received offer to accept it without answer or decline confirmation.
+    const peerConnection = new RTCPeerConnection(config);
+    contestents[contestents.length] = message['callerid'];
+    peerConnections[message['callerid']] = peerConnection // write config in ()
+    peerConnection.addStream(localVideo.srcObject);
+    peerConnection.setRemoteDescription(message['message']) // Remember Local Description and SDP is send throungh the sockets
+    .then(() => peerConnection.createAnswer())
+    .then(sdp => peerConnection.setLocalDescription(sdp))
+    .then(function(){// if was here initially.
+        socket.emit('answer', {'to': message['callerid'], 'message': peerConnection.localDescription});
+    });
+    peerConnection.onaddstream = event => handleRemoteStreamAdded(event.stream, message['callerid']);
+    peerConnection.onicecandidate = function(event) {
+        if (event.candidate) {
+            socket.emit('candidate', {'to': message['callerid'], 'message':event.candidate});
+        }
+    };
 })
 
 socket.on('candidate', function(mess){
     peerConnections[mess['from']].addIceCandidate(new RTCIceCandidate(mess['message']))
     .catch(e => console.error(e));
 });
-
-socket.on('close', function(){// closing the peer-peer connection
-    peerConnection.close();
-})
 
 socket.on('answer', function(message){
     document.getElementById('joiningbuttonid').textContent = 'Connect';
@@ -273,7 +323,7 @@ function addmore(receiver){
       handleRemoteHangup(id)
   })
 
-  function hangup(){
+  function hangup(){ // called from HTML
     for(i=0; i<contestents.length;i++){
       document.querySelector("#" + contestents[i].replace(/[^a-zA-Z]+/g, "").toLowerCase()).remove();
     }
@@ -287,11 +337,11 @@ function addmore(receiver){
 }
 
 socket.on('hangupreceived', function(from){
+    contestents.splice(contestents.indexOf(from), 1);
     handleRemoteHangup(from);
 })
 
   function handleRemoteHangup(id) {
-    console.log('me');
     peerConnections[id] && peerConnections[id].close();
     delete peerConnections[id];
     document.querySelector("#" + id.replace(/[^a-zA-Z]+/g, "").toLowerCase()).remove();
@@ -305,7 +355,7 @@ socket.on('hangupreceived', function(from){
   function screenshare(){
     document.getElementById('camera').style.display = 'block';
     document.getElementById('screen').style.display = 'none';
-    navigator.mediaDevices.getDisplayMedia({video: true})
+    navigator.mediaDevices.getDisplayMedia({video: true, audio: true})
     .then(function(stream){ // if success in getting media devices
         localVideo.srcObject = stream;// adding stream to video Element
     })
@@ -325,3 +375,33 @@ function camera(){
   window.onunload = window.onbeforeunload = function() {
     socket.close();
   };
+//------------------------------------------------------------------------------------------------SFU THING--------------------------
+  socket.on('pleasejoinsfu', function(message){
+      alert('joiningsfu'); // received request to join sfu.
+    offermakertosfu(message);
+  })
+
+  function offermakertosfu(message){ // sending offer to sfu.
+    insfu = true;
+    offercons = {
+        offerToReceiveAudio: 0,
+        offerToReceiveVideo: 1,
+        voiceActivityDetection: false
+    }
+    alert('making offer');
+    const peerConnection = new RTCPeerConnection(config);
+    peerConnections[message['sfu']] = peerConnection;
+    peerConnection.addStream(localVideo.srcObject);
+    peerConnection.createOffer()
+    .then(sdp => peerConnection.setLocalDescription(sdp))
+    .then(function(){
+        socket.emit('offeringtosfu', {'to': message['sfu'], 'message': peerConnection.localDescription});
+    });
+    muteunmute(track = 'a', mvalue = false);// on joining sfu You are automatically muted.
+    peerConnection.onaddstream = event => handleRemoteStreamAdded(event.stream, message['sfu']);
+    peerConnection.onicecandidate = function(event) {
+        if (event.candidate) {
+          socket.emit('candidate', {'to': message['sfu'], 'message': event.candidate});
+        }
+    };
+}

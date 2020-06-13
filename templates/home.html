@@ -6,7 +6,7 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
     <link rel ="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="static/css/design.css" media="all" />
-    <title>Video Call with Besties</title>
+    <title>Video Call</title>
 </head>
 <body style="text-align: center; color:white; background-color: rgb(51,51,51);">
     <ul>
@@ -17,12 +17,20 @@
         <li><a href="https://github.com/utalmighty/VideoCall-WebRTC"><img src="static/images/github.png" style="width: 27px; height: 27px;" aria-label="Source Code"></a></li>
       </ul>
       <h6 style="padding: 10px;">
-          This is Video Conferencing App</h6>
+          Welcome to Video Conferencing App</h6>
     <div id= 'video_container'>
         <div class="remoteVideos"></div>
         <video class="localVideo" playsinline autoplay muted></video>
         <img id="screen" src="static/images/screen-share.svg" onclick="screenshare()">
         <img id="camera" src="static/images/camera.svg" onclick="camera()" style="display: none;">
+        <button onclick="direct()">SFU</button>
+    </div>
+    <div id="meters">
+        <div id="instant">
+            <div class="label">Instant:</div>
+            <meter high="0.25" max="1" value="0"></meter>
+            <div class="value"></div>
+        </div>
     </div>
     <div id='controlsid' class = "flexbox1"> 
         <img src="static/images/unmute mic.webp" id= 'unmutemicid' style="width: 40px; height: 40px; display: block;" aria-label="Mute/Unmute" onclick="muteunmute(track= 'a', mvalue = false)" >
@@ -37,6 +45,7 @@
     <input id='passwordid' placeholder="Password" type="password" style="background-color: rgba(186, 217, 247, 0.699); border-radius: 20px; border-width: 0px;" required></input>
     <button id='buttonid'  style="background-color: black; border-radius: 15px; color: white; border-width: 0px;" onclick="sendcred()">Create</button>
     <script src = 'static/js/my.js'></script>
+    <script src = 'static/js/sound.js'></script>
     <br>
     <br>
     <br>
