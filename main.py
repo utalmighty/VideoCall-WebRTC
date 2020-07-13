@@ -6,7 +6,7 @@ database = []
 sfulist= []
 
 con = Flask(__name__)
-con.secretKey = os.environ.get('Secret_Key')
+#con.secretKey = os.environ.get('Secret_Key')
 socket = SocketIO(con)
 
 @con.errorhandler(404)
@@ -32,7 +32,7 @@ def default_error_handler(e):
 
 @socket.on('Credentials')
 def Credentials(credential_json):
-    if(credential_json['creator'] == True):
+    if(credential_json['creator'] == True): # if signing IN
         for i in database:
             if i['username'] == credential_json['username']:
                 emit('flashing', {'messageid':2, 'message':'Username already exists!'})
@@ -44,7 +44,7 @@ def Credentials(credential_json):
                             'password': credential_json['password'], 'sessionid': sid})
             emit('flashing', {'messageid':1, 'message':'Added!'})
         
-    else:
+    else: # if Joining a meeting
         for i in database:
             if i['username'] == credential_json['username']:
                 if i['password'] == credential_json['password']:
@@ -64,7 +64,7 @@ def declined(message):
     sid = request.sid
     for i in database:
         if i['sessionid'] == sid:
-            emit('flashing', {'messageid':4, 'from': i['username'], 'message': ', Declined the call!'}, room= message['to'])
+            emit('flashing', {'messageid':4, 'from': i['username'], 'id' : sid ,'message': ', Declined the call!'}, room= message['to'])
             break
 
 @socket.on('offer')
@@ -78,7 +78,7 @@ def sendoffer(mess):
 
 @socket.on('offer+1')
 def offerer(message):
-    print('Expensive CAll')
+    print('Expensive CALL')
     sid = request.sid
     for i in database:
         if i['sessionid'] == sid:
@@ -89,7 +89,7 @@ def offerer(message):
 
 
 @socket.on('specialofferaddthem')
-def sendoffer(message):
+def sendoffer2(message):
     sid = request.sid
     for i in database:
         if i['sessionid'] == sid:
@@ -101,7 +101,9 @@ def sendoffer(message):
 
 @socket.on('answer')
 def sendanswer(mess):
-    emit('answer', {'calleeid': request.sid, 'message': mess['message']}, room = mess['to'])
+    sid = request.sid
+    print(sid, "--> CONNECTED <--", mess['to'])
+    emit('answer', {'calleeid': sid, 'message': mess['message']}, room = mess['to'])
 
 @socket.on('candidate')
 def candidate(mess):
@@ -111,6 +113,10 @@ def candidate(mess):
 @socket.on('specialoffer')
 def special(message):
     emit('alsoadd', message['message'], room = message['to'])
+
+@socket.on('connect')
+def connect():
+    print('Connected with: ', request.sid)
 
 @socket.on('disconnect')
 def close():
@@ -130,20 +136,23 @@ def close():
 def hangup(to):
     sid = request.sid
     for i in to:
+        print('Hangup received From', sid, "sending to", i)
         emit('hangupreceived', sid, room = i)
 
 @socket.on('readysfu') # from SFU page.
 def sfus():
-    print('SFUid ', request.sid)
-    sfulist.append(request.sid)
+    sid = request.sid
+    print('SFU id ', sid)
+    sfulist.append(sid)
 
-@socket.on('joinsfu') 
+@socket.on('joinsfu')  # sending query to candidates to join sfu
 def sfu(message):
+    print('Join SFU request received.')
     for i in message['to']:
-        print('Sending query to Join SFU to ', i)
+        print('Sending Query to Join SFU to ', i)
         emit('pleasejoinsfu',{'sfu': sfulist[0]}, room = i)# to members
 
-@socket.on('offeringtosfu')
+@socket.on('offeringtosfu') # Offer making to SFU
 def offersfu(message):
     sid = request.sid
     print('Offering to sfu by',sid)
@@ -154,5 +163,5 @@ def offersfu(message):
     emit('offertojoinsfu', {'callerid':sid, 'message': message['message'], 'name': clientname}, room = sfulist[0])#to SFU
 
 if __name__ == '__main__':
-    socket.run(con, debug = True, host='192.168.1.9') # for locally , host='192.168.1.9'
-    #con.run() # for heroku
+    socket.run(con, host='192.168.1.2') # for locally 
+    #con.run() # for herokua m 
