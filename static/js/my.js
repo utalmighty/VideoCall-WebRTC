@@ -8,6 +8,7 @@ const peerConnections = {};
 contestents = [];
 maximumparties = 1; // Means Only two Peer can be connected(Excluding yourself)
 mysid = '';
+queue = 0;
 insfu = false;
 
 const constraints = { // media devices constraints
@@ -48,6 +49,10 @@ navigator.mediaDevices.getUserMedia(constraints)
 
 function handleRemoteStreamAdded(stream, id){
     console.log("handling Remote Stream Added ,Number of Contestents ", contestents.length);
+    if(insfu == true){
+        console.log("here ALL THE AUDIO Tracks", stream.getAudioTracks(), "length = ", stream.getAudioTracks().length);
+        stream.getAudioTracks()[queue].enabled = false;
+    }
     document.getElementById('joiningbuttonid').disabled = false;
     document.getElementById('joiningbuttonid').textContent = 'Connect';
     const remoteVideo = document.createElement('video');
@@ -170,7 +175,7 @@ function makeoffer(calleesid){ // offer making
     const peerConnection = new RTCPeerConnection(config); //write config in (). //RTCPeerConnection Object is created.
     peerConnections[calleesid] = peerConnection;
     peerConnection.addStream(localVideo.srcObject);
-    peerConnection.createOffer() // Offer is Created(Promise based)
+    peerConnection.createOffer() // Offer is Created(Promise based) {'offerToReceiveAudio':true,'offerToReceiveVideo':true}
     .then(sdp => peerConnection.setLocalDescription(sdp))//SDP: Session Discription Protocol: it contains many information of Peer.
     .then(function(){
         console.log('Number of Contestents(to confirm Join sfu or not)', contestents.length);
@@ -437,3 +442,42 @@ function camera(){
         }
     };
 }
+
+// socket.on('sendrequesttogetaudio', function(message){
+//     console.log('list i received:', message['list']);
+//     x = message['list'];
+//     x.splice(mysid, 1);
+//     console.log('Now I need to send audio request of these members to SFU(after removing myself)', x);
+//     for(i=0;i<x.length; i++){
+//         console.log(i,': Offering to get audio of', x[i])
+//         const peerConnection = new RTCPeerConnection(config);
+//         peerConnections[message['from']] = peerConnection;
+//         peerConnection.createOffer({'offerToReceiveAudio': true, 'offerToReceiveVideo': false})
+//         .then(sdp => peerConnection.setLocalDescription(sdp))
+//         .then(function(){
+//             socket.emit('offerforaudiotosfu', {'to': message['from'], 'message': peerConnection.localDescription, 'myid': mysid, 'which': message['list'][i]});
+//         });
+//         peerConnection.onaddstream = event => handleaudioStreamAdded(event.stream, message['from']);
+//         peerConnection.onicecandidate = function(event) {// try to make it outside for loop.
+//             if (event.candidate) {
+//             socket.emit('candidate', {'to': message['from'], 'message': event.candidate});
+//             }
+//         };
+
+//     }
+// })
+
+// function handleaudioStreamAdded(stream, id){
+//     console.log("handling Remote AUDIO Stream Added");
+//     const remoteaudio = document.createElement('vaudio');
+//     remoteaudio.srcObject = stream;
+//     remoteaudio.setAttribute("id", "audio"+id);
+//     remoteaudio.setAttribute("autoplay", "true");
+//     remoteVideos.appendChild(remoteaudio);
+//     //remoteaudio.style.display='none'
+// }
+
+socket.on('yourserial', function(message){
+    console.log('Got Queue', message['my']);
+    queue  = message['my'];
+})

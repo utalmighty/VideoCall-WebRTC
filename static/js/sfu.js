@@ -11,6 +11,8 @@ canvasfps = 12;
 sendingvideofps = 12;
 socket=io.connect();
 utkid=''
+cnt = 0;
+var strm
 // this should be called first to be called............
 
 const remoteVideos = document.getElementById('remoteVideos');// div
@@ -23,8 +25,7 @@ function addedsfu(){
 }
 
 const constraints = { // SFU constraints add video animation.
-  video:{width: {max: 320}, height: {max: 240}, frameRate: {max: 1}},
-  audio:true
+  video:{width: {max: 320}, height: {max: 240}, frameRate: {max: 1}}
 };
 
 
@@ -39,64 +40,17 @@ const localVideo = document.getElementById('localVideo');//make sendme as localV
   ctx.textAlign = "center";
   ctx.fillText("Waiting for Other Participants.",canvas.width/2, canvas.height/2);
   send = document.getElementById('sendme');
-  var strm = canvas.captureStream(sendingvideofps);
+  strm = canvas.captureStream(sendingvideofps);
   send.srcObject = strm;
-
-  //=====================================================================AUDIO THING==============================================
-  var sources = ["https://upload.wikimedia.org/wikipedia/commons/b/be/Hidden_Tribe_-_Didgeridoo_1_Live.ogg", 
-                "https://upload.wikimedia.org/wikipedia/commons/6/6e/Micronesia_National_Anthem.ogg",
-                "https://upload.wikimedia.org/wikipedia/commons/a/ac/Cracow_trumpet_signal.ogg"];
-  var audio = new AudioContext();
- 
-  var merger = audio.createChannelMerger();
-
-  var splitter = audio.createChannelSplitter();
-  var mixedAudio = audio.createMediaStreamDestination();//cbr
-
-  function get(src) {
-    return fetch(src)
-      .then(function(response) {
-        return response.arrayBuffer()
-      })
-  }
-
-  Promise.all(sources.map(get)).then(function(data) {
-      return Promise.all(data.map(function(buffer, index) {
-          return audio.decodeAudioData(buffer)
-            .then(function(bufferSource) {
-              var source = audio.createBufferSource();
-              source.buffer = bufferSource;
-              source.connect(splitter);
-              splitter.connect(merger);
-              return source
-            })
-        }))
-        .then(function(audionodes) {
-          merger.connect(mixedAudio);//cbr
-          merger.connect(audio.destination);
-          audionodes.forEach(function(node) {
-            node.start(0)
-            strm.addTrack(mixedAudio.stream.getAudioTracks()[0]);
-            console.log("Audio added Sucessfully.")
-          });
-        })
-    })
-
-    .catch(function(e) {
-      console.log(e)
-    });
-  //==============================================================================================================================
 })
 .catch(error => console.log(error));
 
-
 socket.on('offertojoinsfu', function(message){ // if offer is received
-  const send = document.getElementById('sendme');
+  
   console.log('Received Offer from', message['callerid']);
   contestents[contestents.length] = {'id': message['callerid'], 'name': message['name']};
   const peerConnection = new RTCPeerConnection(config);
   peerConnections[message['callerid']] = peerConnection; // write config in ()
-  peerConnection.addStream(send.srcObject);
   peerConnection.setRemoteDescription(message['message']) // Remember Local Description and SDP is send throungh the sockets
   .then(() => peerConnection.createAnswer())
   .then(sdp => peerConnection.setLocalDescription(sdp))
@@ -105,6 +59,7 @@ socket.on('offertojoinsfu', function(message){ // if offer is received
       console.log("Answered to", message['callerid']);
   });
   peerConnection.onaddstream = event => handleRemoteStreamAdded(event.stream, message['callerid']);
+  peerConnection.addStream(strm);
   peerConnection.onicecandidate = function(event) {
       if (event.candidate) {
           socket.emit('candidate', {'to': message['callerid'], 'message':event.candidate});
@@ -122,7 +77,7 @@ function handleRemoteStreamAdded(stream, id){
   remoteVideo.setAttribute("autoplay", "true");
   //remoteVideo.setAttribute('style', "display: none");
   remoteVideos.appendChild(remoteVideo);
-  makeincanvas(id);
+  makeincanvas(id, stream);
   // if (remoteVideos.querySelectorAll("video"). === 1) {
   //   remoteVideos.setAttribute("class", "one remoteVideos");
   // } else {
@@ -150,23 +105,20 @@ function handleRemoteHangup(id) {
   }
 }
 
-function makeincanvas(id){
+function makeincanvas(id, stream){
   c = document.getElementById('canvasid');
   ctx = c.getContext('2d');
   send = document.getElementById('sendme');//video to send.
-  var strm = c.captureStream(sendingvideofps);
-  
-    // console.log('now Audio from-', id);
-    // v = document.getElementById(id);
-    // let cta = new AudioContext();
-    // let dest = cta.createMediaStreamDestination();
-    // let sourceNode = cta.createMediaElementSource(v);
-    // sourceNode.connect(dest);
-    // sourceNode.connect(cta.destination);
-    // let audioTrack = dest.stream.getAudioTracks()[0];
-    // strm.addTrack(audioTrack);
 
-  send.srcObject = strm;
+  socket.emit("heresyourlinenumber", {'to': id, 'serial': cnt});
+  console.log("Audio to be added", stream.getAudioTracks()[0]);
+  strm.addTrack(stream.getAudioTracks()[0]);
+  console.log('Audio of id', id, "Added to send video========", strm.getAudioTracks()[cnt]);
+  cnt = cnt+1;
+  console.log('cnt:', cnt);
+  console.log("ALL Tracks list: ", strm.getAudioTracks());
+
+  //socket.emit('contestents', {'list': contestents, 'to': id}); // for old idea of audio rtelated
   setInterval(function(){
     x = 0;
     for(i=1; i<=contestents.length;i++){
@@ -189,3 +141,24 @@ function makeincanvas(id){
 window.onunload = window.onbeforeunload = function() {
   socket.close();
 };
+
+// socket.on('audioofferreceived', function(message){
+//   console.log("Audio offer received from", message['callerid'], " of ", message['which']);
+
+//   const peerConnection = new RTCPeerConnection(config);
+//   peerConnections[message['callerid']] = peerConnection; // write config in ()
+//   which = document.getElementById(message['which'])
+//   peerConnection.addStream(which.srcObject); //sending the req srcObject
+//   peerConnection.setRemoteDescription(message['message']) // Remember Local Description and SDP is send throungh the sockets
+//   .then(() => peerConnection.createAnswer())
+//   .then(sdp => peerConnection.setLocalDescription(sdp))
+//   .then(function(){
+//       socket.emit('answer', {'to': message['callerid'], 'message': peerConnection.localDescription});
+//       console.log("AUDIO Answered to", message['callerid']);
+//   });
+//   peerConnection.onicecandidate = function(event) {
+//       if (event.candidate) {
+//           socket.emit('candidate', {'to': message['callerid'], 'message':event.candidate});
+//       }
+//   };
+// })

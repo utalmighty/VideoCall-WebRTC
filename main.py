@@ -162,6 +162,21 @@ def offersfu(message):
             break
     emit('offertojoinsfu', {'callerid':sid, 'message': message['message'], 'name': clientname}, room = sfulist[0])#to SFU
 
+@socket.on('heresyourlinenumber')
+def mynumber(message):
+    print("Sending Queue number", message['serial'] , " to", message['to'])
+    emit('yourserial', {'my': message['serial']}, room = message['to'])
+
+# @socket.on('contestents') #contestest list to add audio 
+# def cont(message):
+#     print('Sending Contestest from SFU to', message['to'])
+#     emit('sendrequesttogetaudio', {'list': message['list'], 'from': request.sid}, room = message['to'])
+
+# @socket.on('offerforaudiotosfu')
+# def audiooffer(message):
+#     print('sending AUDIO offer to sfu')
+#     emit('audioofferreceived', {'message': message['message'], 'which': message['which'], 'callerid': message['myid']}, room = message['to'])
+
 if __name__ == '__main__':
-    socket.run(con, host='192.168.1.2') # for locally 
+    socket.run(con, host='192.168.1.7') # for locally 
     #con.run() # for herokua m 
